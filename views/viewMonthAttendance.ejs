@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1">
+  <title>View Attendance</title>
+  <link rel="icon" href="/images/favicon.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/viewMonthAttendance.css">
+  <script src="https://unpkg.com/boxicons@2.1.2/dist/boxicons.js"></script>
+  <script>
+    if (window.history.replaceState) {
+      window.history.replaceState(null, null, window.location.href);
+    }
+  </script>
+</head>
+
+<body>
+  <div class="navbar">
+    <h1 class="nameOfTeacher">Hello <%= teacherName %>!</h1>
+    <a class="tooltip" href="/teacherLogout"><span class="tooltiptext">Logout</span><img class="logout-btn"
+        src="https://img.icons8.com/external-sbts2018-mixed-sbts2018/58/000000/external-logout-social-media-basic-1-sbts2018-mixed-sbts2018.png" /></a>
+  </div>
+
+  <div class="container">
+    <h1 class="heading">Attendance</h1>
+    <box-icon class="back-btn" name="arrow-back" onclick="backToHomeTeacher()"></box-icon>
+    <%- include('partials/errorMsgs') %>
+    <form class="view-attendance-form" action="/attendanceofmonth" method="POST">
+      <input class="hidden-month" type="hidden" name="attendanceMonth" value="<%=attendanceMonth%>">
+      <div class="custom-select">
+        <select>
+          <option value="0"><%=attendanceMonth%></option>
+          <option value="1">January</option>
+          <option value="2">February</option>
+          <option value="3">March</option>
+          <option value="4">April</option>
+          <option value="5">May</option>
+          <option value="6">June</option>
+          <option value="7">July</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
+      </div>
+
+      <input class="hidden-input" type="hidden" name="branch" value="<%=branch%>">
+      <div class="custom-select">
+        <select>
+          <option value="0"><%=branchValue%></option>
+          <option value="1">CSE</option>
+          <option value="2">CST</option>
+          <option value="3">IT</option>
+          <option value="4">ITE</option>
+          <option value="5">ECE</option>
+          <option value="6">EEE</option>
+        </select>
+      </div>
+
+      <button class="get-attendance-btn" type="submit" name="button">View Attendance</button>
+    </form>
+
+    <% if(result.length === 0 && isSelected) { %>
+      <h1 class="no-attendance">No Attendance Found</h1>
+    <% } %>
+
+    <div class="box">
+      <% if(result.length !== 0){ %>
+      <div class="attendance-card">
+        <div class="sno">SNo.</div>
+        <div class="enrollnum">Enrollment Number</div>
+        <div class="nameOfStudent">Student Name</div>
+        <% for(let i=1; i<=noOfDays; i++){ %>
+        <div class="day-no"><%=dayNumber%></div>
+        <% dayNumber++; %>
+        <% } %>
+      </div>
+      <% dayNumber = 1 %>
+      <% for(let i=0; i<studentNames.length; i++){ %>
+      <div class="attendance-card">
+        <div class="sno"><%=key%></div>
+        <div class="enrollnum"><%=studentEnrollmentNo[i]%></div>
+        <div class="nameOfStudent"><%=studentNames[i]%></div>
+        <% for(let j=0; j<noOfDays; j++){ %>
+          <% if(typeof(attendanceStatus[j].studentArray) !== "undefined"){ %>
+            <% let isMarked = false; %>
+            <% for(let k=0; k<attendanceStatus[j].studentArray.length; k++){ %>
+              <% if(attendanceStatus[j].studentArray[k] === studentEnrollmentNo[i]){ %>
+                <div class="day-no green">P</div>
+                <% isMarked = true; %>
+              <% } %>
+            <% } %>
+            <% if(isMarked === false){ %>
+              <div class="day-no">.</div>
+            <% } %>
+          <% }else{ %>
+            <div class="day-no">.</div>
+          <% } %>
+        <% } %>
+      </div>
+      <% key++; %>
+      <% } %>
+      <% } %>
+    </div>
+
+  </div>
+
+  <script src="js/viewMonthAttendance.js" charset="utf-8"></script>
+  <script src="js/index.js" charset="utf-8"></script>
+</body>
+
+</html>

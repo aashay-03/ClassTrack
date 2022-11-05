@@ -1,0 +1,128 @@
+body {
+  text-align: center;
+}
+
+/* ############### Container ############### */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.heading {
+  font-size: 3.5rem;
+  margin-top: 30px;
+  color: #0e3564;
+}
+
+.back-btn {
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  cursor: pointer;
+  transform: scale(1.5);
+}
+
+
+.input-div {
+  margin-top: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 80vw;
+}
+
+input {
+  margin: 12px;
+  padding: 8px 8px 8px 6.5px;
+  width: 350px;
+  border-radius: 8px;
+  outline: none;
+  border: 1px solid black;
+  font-size: 1rem;
+  text-align: center;
+}
+
+input[type=text]:disabled {
+  background: #F2F2F2;
+}
+
+/* ############### Attendance Box ############### */
+
+.box {
+  width: 90vw;
+  margin-top: 60px;
+  margin-bottom: 50px;
+}
+
+.attendance-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid black;
+}
+
+.attendance-card div {
+  text-align: center;
+  font-size: 1.2rem;
+  padding: 12px;
+}
+
+.sno {
+  border: 1px solid transparent;
+  border-color: transparent rgba(0, 0, 0, 1) transparent transparent;
+  width: 5vw;
+}
+
+.enrollnum {
+  border: 1px solid transparent;
+  border-color: transparent rgba(0, 0, 0, 1) transparent transparent;
+  width: 30vw;
+}
+
+.nameOfStudent {
+  border: 1px solid transparent;
+  border-color: transparent rgba(0, 0, 0, 1) transparent transparent;
+  width: 35vw;
+}
+
+.attendance-status {
+  width: 20vw;
+}
+
+.green {
+  background-color: #5cd65c;
+}
+
+.red {
+  background-color: #ff3333;
+}
+
+/* ############### Attendance Form ############### */
+
+.stay-hidden {
+  display: none;
+}
+
+/* ############### Buttons ############### */
+
+button {
+  padding: 10px 20px;
+  border: 2px solid #9933ff;
+  color: #fff;
+  outline: none;
+  margin: 15px 1px 13.5px 1px;
+  font-size: 1rem;
+  border-radius: 5px;
+  background-color: #726cf8;
+  background-image: linear-gradient(315deg, #726cf8 0%, #e975a8 74%);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background-image: linear-gradient(300deg, #726cf8 0%, #e975a8 84%);
+}

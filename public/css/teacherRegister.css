@@ -1,0 +1,168 @@
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.heading {
+  margin-top: 15vh;
+  margin-bottom: 30px;
+  font-size: 2.5rem;
+  color: #0e3564;
+}
+
+/* ############### Register Box ############### */
+
+.register-box {
+  padding: 25px 20px 20px 20px;
+  border: 2px solid black;
+  border-radius: 15px;
+  background-color: #A9C9FF;
+  background-image: linear-gradient(315deg, #A9C9FF 0%, #FFBBEC 100%);
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+input {
+  margin: 12px;
+  padding: 8px 8px 8px 6.5px;
+  width: 350px;
+  border-radius: 8px;
+  outline: none;
+  border: 1px solid black;
+  font-size: 1rem;
+}
+
+input[type=text]:disabled {
+  background: #F2F2F2;
+}
+
+.password-field {
+  position: relative;
+}
+
+.eye-image {
+  height: 18px;
+  margin-right: 2px;
+}
+
+.pass {
+  padding-right: 35px;
+}
+
+.showBtn {
+  position: absolute;
+  cursor: pointer;
+  font-weight: 500;
+  right: 18px;
+  top: 35%;
+  font-size: 13px;
+  cursor: pointer;
+  display: none;
+}
+
+/* ############### Dropdown Menu ############### */
+
+.custom-select {
+  position: relative;
+  width: 350px;
+  margin: 12px;
+  border-radius: 8px;
+  outline: none;
+  border: 1px solid black;
+  font-size: 1rem;
+  background-color: #fff;
+}
+
+.custom-select select {
+  display: none;
+}
+
+.select-selected:after {
+  position: absolute;
+  content: "";
+  top: 14px;
+  right: 10px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-color: #000 transparent transparent transparent;
+}
+
+.select-selected.select-arrow-active:after {
+  border-color: transparent transparent #000 transparent;
+  top: 7px;
+}
+
+.select-items div {
+  color: #000;
+  padding: 8px 16px 8px 6.5px;
+  border: 1px solid transparent;
+  border-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.5) rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.select-selected {
+  color: #000;
+  padding: 8px 16px 8px 5px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.select-items {
+  position: absolute;
+  background-color: #fff;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99;
+}
+
+.select-hide {
+  display: none;
+}
+
+.select-items div:hover, .same-as-selected {
+  background-color: #1e90ff;
+}
+
+/* ############### Buttons ############### */
+
+.register-form button {
+  padding: 10px 20px;
+  border: 2px solid #9933ff;
+  color: #fff;
+  outline: none;
+  margin: 13.5px 1px 13.5px 1px;
+  font-size: 1rem;
+  border-radius: 5px;
+  background-color: #726cf8;
+  background-image: linear-gradient(315deg, #726cf8 0%, #e975a8 74%);
+  cursor: pointer;
+}
+
+.register-form button:hover {
+  background-image: linear-gradient(300deg, #726cf8 0%, #e975a8 74%);
+}
+
+/* ############### Login Redirect ############### */
+
+.login-link {
+  color: #0a2342;
+}
+
+.login-link a{
+  color: #1a75ff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-link a:hover{
+  text-decoration: underline;
+}

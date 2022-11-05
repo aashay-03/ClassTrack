@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendance Success</title>
+  <link rel="icon" href="/images/favicon.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/attendanceUploaded.css">
+  <script src="https://unpkg.com/boxicons@2.1.2/dist/boxicons.js"></script>
+  <script>
+    if (window.history.replaceState) {
+      window.history.replaceState(null, null, window.location.href);
+    }
+  </script>
+</head>
+
+<body>
+
+  <div class="navbar">
+    <h1 class="nameOfTeacher">Welcome <%= teacherName %>!</h1>
+    <a class="tooltip" href="/teacherLogout"><span class="tooltiptext">Logout</span><img class="logout-btn" src="https://img.icons8.com/external-sbts2018-mixed-sbts2018/58/000000/external-logout-social-media-basic-1-sbts2018-mixed-sbts2018.png" /></a>
+  </div>
+
+  <div class="container">
+    <box-icon class="back-btn" name="arrow-back" onclick="backToHomeTeacher()"></box-icon>
+    <h2 class="msg-textbox">Attendance Marked Successfully !</h2>
+    <form class="view-attendance-form" action="/viewAttendance" method="post">
+      <input type="hidden" name="teacherName" value="<%=teacherName%>">
+      <input type="hidden" name="email" value="<%=email%>">
+      <input type="hidden" name="branch" value="<%=branch%>">
+      <input type="hidden" name="day" value="<%=day%>">
+      <input type="hidden" name="month" value="<%=month%>">
+      <button type="submit" name="button">View Attendance</button>
+    </form>
+  </div>
+
+  <script src="js/index.js" charset="utf-8"></script>
+
+</body>
+
+</html>
