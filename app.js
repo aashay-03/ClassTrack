@@ -276,19 +276,47 @@ app.post("/uploadimages", function(req, res) {
     const dateOfAttendance = req.body.attendanceDate.split("-");
     const day = parseInt(dateOfAttendance[2]);
     const month = parseInt(dateOfAttendance[1]);
-    cloudinary.uploader.upload(firstImage.tempFilePath, (err, result) => {
-      const firstLink = result.url;
-      const imageuploaded = new UploadedImages({
-        email: req.user.username,
-        firstImagePath: firstLink,
-        branch: req.body.branch,
-        day: day,
-        month: month
-      });
-      imageuploaded.save(() => {
-        res.redirect("/uploadAttendance");
-      });
-    });
+    Attendance.findOne({
+      teacherEmail: req.user.username,
+      branch: req.body.branch,
+      month: month,
+      day: day
+    }, function(err, result) {
+      if (err) {
+        console.log(err);
+      } else {
+        if (result) {
+          errors.push({
+            msg: "Attendance is already marked for this date"
+          });
+          if (errors.length > 0) {
+            res.render("markAttendance", {
+              errors,
+              teacherName: req.body.teacherName,
+              email: req.user.username,
+              branchValue: req.body.branch,
+              branch: req.body.branch,
+              todaysDate: todaysDate,
+              dateSelected: ""
+            });
+          }
+        } else {
+          cloudinary.uploader.upload(firstImage.tempFilePath, (err, result) => {
+            const firstLink = result.url;
+            const imageuploaded = new UploadedImages({
+              email: req.user.username,
+              firstImagePath: firstLink,
+              branch: req.body.branch,
+              day: day,
+              month: month
+            });
+            imageuploaded.save(() => {
+              res.redirect("/uploadAttendance");
+            });
+          });
+        }
+      }
+    })
   }
 });
 
@@ -350,22 +378,29 @@ app.post("/uploadAttendance", function(req, res) {
 });
 
 app.post("/viewAttendance", function(req, res) {
-  Attendance.findOne({email: req.body.email, branch: req.body.branch, month: req.body.month, day: req.body.day}, function(err, result) {
+  Attendance.findOne({
+    email: req.body.email,
+    branch: req.body.branch,
+    month: req.body.month,
+    day: req.body.day
+  }, function(err, result) {
     const studentNames = [];
     const studentEnrollmentNo = [];
-    Student.find({branch: req.body.branch}, function(err, studentData) {
-      if(err){
+    Student.find({
+      branch: req.body.branch
+    }, function(err, studentData) {
+      if (err) {
         console.log(err);
-      }else{
+      } else {
         for (let i = 0; i < studentData.length; i++) {
           studentNames.push(studentData[i].studentName);
           studentEnrollmentNo.push(studentData[i].enrollmentno);
         }
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        const month = months[req.body.month-1];
+        const month = months[req.body.month - 1];
         const date = req.body.day + " " + month;
         const present = [];
-        for(let i=0; i<result.studentsPresent.length; i++){
+        for (let i = 0; i < result.studentsPresent.length; i++) {
           const myArray = result.studentsPresent[i].split("-");
           const index = studentEnrollmentNo.indexOf(myArray[1]);
           if (index > -1) {
@@ -379,14 +414,22 @@ app.post("/viewAttendance", function(req, res) {
           present.push(presentStudent);
         }
         const absent = [];
-        for(let i=0; i<studentEnrollmentNo.length; i++){
+        for (let i = 0; i < studentEnrollmentNo.length; i++) {
           const absentStudent = {
             enrollmentno: studentEnrollmentNo[i],
             studentName: studentNames[i]
           }
           absent.push(absentStudent);
         }
-        res.render("viewClassAttendance", {teacherName: req.body.teacherName, branch: req.body.branch, date: date, month: month, present: present, absent: absent, key: 1});
+        res.render("viewClassAttendance", {
+          teacherName: req.body.teacherName,
+          branch: req.body.branch,
+          date: date,
+          month: month,
+          present: present,
+          absent: absent,
+          key: 1
+        });
       }
     });
   });
@@ -397,50 +440,101 @@ app.post("/viewmonthlyattendance", function(req, res) {
 });
 
 app.get("/viewAttendanceofMonth", ensureAuthTeacher, function(req, res) {
-  res.render("viewMonthAttendance", {teacherName: req.user.teacherName, attendanceMonth: "Select Month", branchValue: "Select Branch", branch: "Select Branch", noOfDays: 0, studentNames: [], studentEnrollmentNo: [], dayNumber: 1, key: 1, isSelected: false, result: [], attendanceStatus: []});
+  res.render("viewMonthAttendance", {
+    teacherName: req.user.teacherName,
+    attendanceMonth: "Select Month",
+    branchValue: "Select Branch",
+    branch: "Select Branch",
+    noOfDays: 0,
+    studentNames: [],
+    studentEnrollmentNo: [],
+    dayNumber: 1,
+    key: 1,
+    isSelected: false,
+    result: [],
+    attendanceStatus: []
+  });
 });
 
 app.post("/attendanceofmonth", function(req, res) {
   let errors = [];
-  if(req.body.attendanceMonth === "Select Month"){
-    errors.push({msg: "Please Select Month"});
+  if (req.body.attendanceMonth === "Select Month") {
+    errors.push({
+      msg: "Please Select Month"
+    });
   }
-  if(errors.length > 0){
-    if(req.body.branch === ""){
+  if (errors.length > 0) {
+    if (req.body.branch === "") {
       req.body.branch = "Select Branch";
     }
-    res.render("viewMonthAttendance", {errors, teacherName: req.user.teacherName, attendanceMonth: "Select Month", branchValue: req.body.branch, branch: req.body.branch, noOfDays: 0, studentNames: [], studentEnrollmentNo: [], dayNumber: 1, key: 1, isSelected: false, result: [], attendanceStatus: []});
-  }else{
-    if(req.body.branch === "Select Branch"){
-      errors.push({msg: "Please Select Branch"});
+    res.render("viewMonthAttendance", {
+      errors,
+      teacherName: req.user.teacherName,
+      attendanceMonth: "Select Month",
+      branchValue: req.body.branch,
+      branch: req.body.branch,
+      noOfDays: 0,
+      studentNames: [],
+      studentEnrollmentNo: [],
+      dayNumber: 1,
+      key: 1,
+      isSelected: false,
+      result: [],
+      attendanceStatus: []
+    });
+  } else {
+    if (req.body.branch === "Select Branch") {
+      errors.push({
+        msg: "Please Select Branch"
+      });
     }
-    if(errors.length > 0){
-      res.render("viewMonthAttendance", {errors, teacherName: req.user.teacherName, attendanceMonth: req.body.attendanceMonth, branchValue: "Select Branch", branch: "Select Branch", noOfDays: 0, studentNames: [], studentEnrollmentNo: [], dayNumber: 1, key: 1, isSelected: false, result: [], attendanceStatus: []});
-    }else{
+    if (errors.length > 0) {
+      res.render("viewMonthAttendance", {
+        errors,
+        teacherName: req.user.teacherName,
+        attendanceMonth: req.body.attendanceMonth,
+        branchValue: "Select Branch",
+        branch: "Select Branch",
+        noOfDays: 0,
+        studentNames: [],
+        studentEnrollmentNo: [],
+        dayNumber: 1,
+        key: 1,
+        isSelected: false,
+        result: [],
+        attendanceStatus: []
+      });
+    } else {
       const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      Attendance.find({email: req.user.username, month: months.indexOf(req.body.attendanceMonth) + 1, branch: req.body.branch}, function(err, result) {
-        if(err){
+      Attendance.find({
+        email: req.user.username,
+        month: months.indexOf(req.body.attendanceMonth) + 1,
+        branch: req.body.branch
+      }, function(err, result) {
+        if (err) {
           console.log(err);
-        }else{
+        } else {
           const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
           const idx = months.indexOf(req.body.attendanceMonth);
           const noOfDays = daysInMonth[idx];
-          Student.find({branch: req.body.branch}, function(err, studentData) {
-            if(err){
+          Student.find({
+            branch: req.body.branch
+          }, function(err, studentData) {
+            if (err) {
               console.log(err);
-            }else{
+            } else {
               const studentNames = [];
               const studentEnrollmentNo = [];
               const attendanceStatus = [];
-              for (let i = 0; i < noOfDays; i++){
+              for (let i = 0; i < noOfDays; i++) {
                 attendanceStatus.push({});
               }
-              for(let i=0; i<result.length; i++){
+              for (let i = 0; i < result.length; i++) {
                 const myObj = result[i];
                 const dateIdx = myObj.day - 1;
                 const presentStudentsEnrollment = [];
                 const myArray = myObj.studentsPresent;
-                for(let j=0; j<myArray.length; j++){
+                for (let j = 0; j < myArray.length; j++) {
                   const enrollmentOfPresentStudent = myArray[j].split("-")[1];
                   presentStudentsEnrollment.push(enrollmentOfPresentStudent);
                 }
@@ -453,7 +547,20 @@ app.post("/attendanceofmonth", function(req, res) {
                 studentNames.push(studentData[i].studentName);
                 studentEnrollmentNo.push(studentData[i].enrollmentno);
               }
-              res.render("viewMonthAttendance", {teacherName: req.user.teacherName, attendanceMonth: req.body.attendanceMonth, branchValue: req.body.branch, branch: req.body.branch, noOfDays: noOfDays, studentNames: studentNames, studentEnrollmentNo: studentEnrollmentNo, dayNumber: 1, key: 1, isSelected: true, result: result, attendanceStatus: attendanceStatus})
+              res.render("viewMonthAttendance", {
+                teacherName: req.user.teacherName,
+                attendanceMonth: req.body.attendanceMonth,
+                branchValue: req.body.branch,
+                branch: req.body.branch,
+                noOfDays: noOfDays,
+                studentNames: studentNames,
+                studentEnrollmentNo: studentEnrollmentNo,
+                dayNumber: 1,
+                key: 1,
+                isSelected: true,
+                result: result,
+                attendanceStatus: attendanceStatus
+              })
             }
           })
         }
