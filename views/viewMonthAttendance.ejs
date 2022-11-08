@@ -63,14 +63,14 @@
     </form>
 
     <% if(result.length === 0 && isSelected) { %>
-      <h1 class="no-attendance">No Attendance Found</h1>
+    <h1 class="no-attendance">No Attendance Found</h1>
     <% } %>
 
     <div class="box">
       <% if(result.length !== 0){ %>
       <div class="attendance-card">
         <div class="sno">SNo.</div>
-        <div class="enrollnum">Enrollment Number</div>
+        <div class="enrollnum">Enrollment No.</div>
         <div class="nameOfStudent">Student Name</div>
         <% for(let i=1; i<=noOfDays; i++){ %>
         <div class="day-no"><%=dayNumber%></div>
@@ -82,22 +82,28 @@
       <div class="attendance-card">
         <div class="sno"><%=key%></div>
         <div class="enrollnum"><%=studentEnrollmentNo[i]%></div>
-        <div class="nameOfStudent"><%=studentNames[i]%></div>
-        <% for(let j=0; j<noOfDays; j++){ %>
-          <% if(typeof(attendanceStatus[j].studentArray) !== "undefined"){ %>
-            <% let isMarked = false; %>
-            <% for(let k=0; k<attendanceStatus[j].studentArray.length; k++){ %>
-              <% if(attendanceStatus[j].studentArray[k] === studentEnrollmentNo[i]){ %>
-                <div class="day-no green">P</div>
-                <% isMarked = true; %>
-              <% } %>
-            <% } %>
-            <% if(isMarked === false){ %>
-              <div class="day-no">.</div>
-            <% } %>
+        <div class="nameOfStudent">
+          <% if(studentNames[i].length > 15){ %>
+          <%=studentNames[i].substring(0, 12)%>...
           <% }else{ %>
-            <div class="day-no">.</div>
+          <%=studentNames[i]%>
           <% } %>
+        </div>
+        <% for(let j=0; j<noOfDays; j++){ %>
+        <% if(typeof(attendanceStatus[j].studentArray) !== "undefined"){ %>
+        <% let isMarked = false; %>
+        <% for(let k=0; k<attendanceStatus[j].studentArray.length; k++){ %>
+        <% if(attendanceStatus[j].studentArray[k] === studentEnrollmentNo[i]){ %>
+        <div class="day-no green">P</div>
+        <% isMarked = true; %>
+        <% } %>
+        <% } %>
+        <% if(isMarked === false){ %>
+        <div class="day-no">.</div>
+        <% } %>
+        <% }else{ %>
+        <div class="day-no">.</div>
+        <% } %>
         <% } %>
       </div>
       <% key++; %>

@@ -236,3 +236,42 @@ input {
 .btns {
   margin-top: 20px;
 }
+
+/* ############### Media Queries ############### */
+
+@media screen and (max-width: 1150px) {
+  .upload-screenshot-form {
+    width: 80vw;
+  }
+}
+
+@media screen and (max-width: 1025px) {
+  .heading {
+    font-size: 3.2rem;
+  }
+}
+
+@media screen and (max-width: 940px) {
+  .heading {
+    font-size: 3rem;
+  }
+}
+
+@media screen and (max-width: 920px) {
+  .upload-screenshot-form {
+    width: 85vw;
+  }
+}
+
+@media screen and (max-width: 890px) {
+  .heading {
+    width: 75vw;
+    font-size: 3.2rem;
+  }
+}
+
+@media screen and (max-width: 790px) {
+  .upload-screenshot-form {
+    width: 90vw;
+  }
+}

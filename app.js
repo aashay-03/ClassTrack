@@ -122,9 +122,9 @@ passport.deserializeUser(function(user, done) {
 
 const sendResetPasswordMail = (name, email, token) => {
   const transport = nodemailer.createTransport({
-    service: 'gmail',
+    service: "gmail",
     auth: {
-      type: 'OAuth2',
+      type: "OAuth2",
       user: process.env.MAIL_USERNAME,
       pass: process.env.MAIL_PASSWORD,
       clientId: process.env.OAUTH_CLIENTID,

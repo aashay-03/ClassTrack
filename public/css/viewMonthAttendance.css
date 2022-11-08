@@ -196,3 +196,111 @@ button:hover {
 .green {
   background-color: #5cd65c;
 }
+
+/* ############### Media Queries ############### */
+
+@media screen and (max-width: 1281px) {
+  .enrollnum {
+    width: 11vw;
+  }
+
+  .nameOfStudent {
+    width: 13vw;
+  }
+}
+
+
+@media screen and (max-width: 1185px) {
+  .sno {
+    width: 5vw;
+  }
+
+  .enrollnum {
+    width: 16vw;
+  }
+
+  .nameOfStudent {
+    display: none;
+  }
+
+  .day-no {
+    width: 2.51vw;
+  }
+}
+
+@media screen and (max-width: 1050px) {
+  .sno {
+    width: 4vw;
+  }
+
+  .enrollnum {
+    width: 14vw;
+  }
+
+  .day-no {
+    width: 2.61vw;
+  }
+
+}
+
+@media screen and (max-width: 1025px) {
+  .view-attendance-form {
+    width: 90vw;
+  }
+}
+
+@media screen and (max-width: 1000px) {
+  .sno {
+    display: none;
+  }
+
+  .enrollnum {
+    width: 14vw;
+  }
+
+  .day-no {
+    width: 2.74vw;
+  }
+
+  .attendance-card div {
+    font-size: 1rem;
+    padding: 9px 5px;
+  }
+}
+
+@media screen and (max-width: 940px) {
+  .attendance-card div {
+    font-size: 0.9rem;
+    padding: 8px 4px;
+  }
+
+  .enrollnum {
+    width: 13vw;
+  }
+
+  .day-no {
+    width: 2.77vw;
+  }
+
+}
+
+@media screen and (max-width: 860px) {
+  .attendance-card div {
+    font-size: 0.8rem;
+    padding: 7.5px 2.5px;
+  }
+
+  .enrollnum {
+    width: 12vw;
+  }
+
+  .day-no {
+    width: 2.8vw;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .heading {
+    font-size: 3.2rem;
+  }
+}

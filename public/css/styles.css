@@ -25,13 +25,6 @@ body {
   color: #fff;
 }
 
-.navbar .profile-photo {
-  width: 65px;
-  height: 65px;
-  margin-top: 5px;
-  border-radius: 45px;
-}
-
 .left-side-box {
   display: flex;
   margin-left: 25px;
