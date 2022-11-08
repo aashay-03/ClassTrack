@@ -9,6 +9,8 @@ const flash = require("connect-flash");
 const path = require("path");
 const fileUpload = require("express-fileupload");
 const cloudinary = require("cloudinary").v2;
+const nodemailer = require("nodemailer");
+const randomstring = require("randomstring");
 const LocalStrategy = require("passport-local").Strategy;
 
 cloudinary.config({
@@ -68,7 +70,11 @@ mongoose.connect(`${mongo_database}`, {
 const teacherSchema = new mongoose.Schema({
   email: String,
   password: String,
-  teacherName: String
+  teacherName: String,
+  token: {
+    type: String,
+    default: ""
+  }
 });
 
 const uploadedImagesSchema = new mongoose.Schema({
@@ -113,6 +119,35 @@ passport.deserializeUser(function(user, done) {
   if (user != null)
     done(null, user);
 });
+
+const sendResetPasswordMail = (name, email, token) => {
+  const transport = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      type: 'OAuth2',
+      user: process.env.MAIL_USERNAME,
+      pass: process.env.MAIL_PASSWORD,
+      clientId: process.env.OAUTH_CLIENTID,
+      clientSecret: process.env.OAUTH_CLIENT_SECRET,
+      refreshToken: process.env.OAUTH_REFRESH_TOKEN
+    }
+  });
+
+  const mailOptions = {
+    from: process.env.MAIL_USERNAME,
+    to: email,
+    subject: "Reset Password",
+    html: '<p>Hi ' + name + ', </p><p>Please click <a href="http://localhost:3000/resetPassword?token=' + token + '">here</a> to reset your password.</p><br><p>Regards</p><p>Project Admin</p>'
+  };
+
+  transport.sendMail(mailOptions, function(err, info) {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(info);
+    }
+  });
+}
 
 app.get("/", ensureGuestTeacher, function(req, res) {
   res.redirect("/teacherLogin");
@@ -197,6 +232,113 @@ app.post("/teacherRegister", function(req, res) {
           }
         });
       }
+    }
+  }
+});
+
+app.get("/forgotPassword", ensureGuestTeacher, function(req, res) {
+  res.render("forgotPassword");
+});
+
+app.post("/forgotPassword", function(req, res) {
+  const email = req.body.username;
+  Teacher.findOne({
+    username: email
+  }, function(req, result) {
+    if (!result) {
+      let errors = [];
+      errors.push({
+        msg: "Invalid Email"
+      });
+      res.render("forgotPassword", {
+        errors
+      });
+    } else {
+      const randomstringVariable = randomstring.generate();
+      Teacher.updateOne({
+        username: email
+      }, {
+        $set: {
+          token: randomstringVariable
+        }
+      }, function(err, teacherData) {
+        sendResetPasswordMail(result.teacherName, result.username, randomstringVariable);
+        res.render("forgotPassword", {
+          success_msg: "Email Sent!"
+        });
+      });
+    }
+  });
+});
+
+app.get("/resetPassword", ensureGuestTeacher, function(req, res) {
+  Teacher.findOne({
+    token: req.query.token
+  }, function(err, result) {
+    if (err) {
+      console.log(err);
+    } else {
+      if (!result) {
+        res.status(200).send({
+          msg: "Invalid Link"
+        });
+      } else {
+        res.render("resetPassword", {
+          token: req.query.token
+        });
+      }
+    }
+  });
+});
+
+app.post("/resetPassword", function(req, res) {
+  const newPassword = req.body.newpassword;
+  const confirmPassword = req.body.confirmpassword;
+  let errors = [];
+  if (newPassword.length < 6) {
+    errors.push({
+      msg: "Password should be atleast 6 characters"
+    });
+  }
+  if (errors.length > 0) {
+    res.render("resetPassword", {
+      errors,
+      token: req.body.token
+    });
+  } else {
+    if (newPassword !== confirmPassword) {
+      errors.push({
+        msg: "Passwords don't match"
+      });
+    }
+    if (errors.length > 0) {
+      res.render("resetPassword", {
+        errors,
+        token: req.body.token
+      });
+    } else {
+      Teacher.findOne({
+        token: req.body.token
+      }, (err, user) => {
+        user.setPassword(newPassword, function(err, users) {
+          Teacher.updateOne({
+              _id: users._id
+            }, {
+              hash: users.hash,
+              salt: users.salt,
+              token: ''
+            },
+            (err, result) => {
+              if (err) {
+                console.log(err);
+              } else {
+                res.render("teacherLogin", {
+                  success_msg: "Password Changed Successfully!"
+                })
+              }
+            })
+        })
+      })
     }
   }
 });
