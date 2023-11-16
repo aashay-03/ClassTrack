@@ -62,10 +62,10 @@ const mongo_database = process.env.MONGO_REMOTE;
 
 mongoose.connect(`${mongo_database}`, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   })
   .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.log(err));
+  .catch(err => console.error(err));
 
 const teacherSchema = new mongoose.Schema({
   email: String,
@@ -142,7 +142,7 @@ const sendResetPasswordMail = (name, email, token) => {
 
   transport.sendMail(mailOptions, function(err, info) {
     if (err) {
-      console.log(err);
+      console.error(err);
     } else {
       console.log(info);
     }
@@ -240,11 +240,12 @@ app.get("/forgotPassword", ensureGuestTeacher, function(req, res) {
   res.render("forgotPassword");
 });
 
-app.post("/forgotPassword", function(req, res) {
+app.post("/forgotPassword", async function(req, res) {
   const email = req.body.username;
-  Teacher.findOne({
-    username: email
-  }, function(req, result) {
+  try {
+    const result = await Teacher.One({
+      username: email
+    });
     if (!result) {
       let errors = [];
       errors.push({
@@ -255,43 +256,49 @@ app.post("/forgotPassword", function(req, res) {
       });
     } else {
       const randomstringVariable = randomstring.generate();
-      Teacher.updateOne({
-        username: email
-      }, {
-        $set: {
-          token: randomstringVariable
-        }
-      }, function(err, teacherData) {
+      try {
+        const updateResult = await Teacher.updateOne({
+          username: email
+        }, {
+          $set: {
+            token: randomstringVariable
+          }
+        });
         sendResetPasswordMail(result.teacherName, result.username, randomstringVariable);
         res.render("forgotPassword", {
           success_msg: "Email Sent!"
         });
-      });
-    }
-  });
-});
-
-app.get("/resetPassword", ensureGuestTeacher, function(req, res) {
-  Teacher.findOne({
-    token: req.query.token
-  }, function(err, result) {
-    if (err) {
-      console.log(err);
-    } else {
-      if (!result) {
-        res.status(200).send({
-          msg: "Invalid Link"
-        });
-      } else {
-        res.render("resetPassword", {
-          token: req.query.token
-        });
+      } catch (err) {
+        console.error(err);
       }
     }
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
-app.post("/resetPassword", function(req, res) {
+app.get("/resetPassword", ensureGuestTeacher, async function(req, res) {
+  try {
+    const result = await Teacher.findOne({
+      token: req.query.token
+    });
+    if (!result) {
+      res.status(200).send({
+        msg: "Invalid Link"
+      });
+    } else {
+      res.render("resetPassword", {
+        token: req.query.token
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.post("/resetPassword", async function(req, res) {
   const newPassword = req.body.newpassword;
   const confirmPassword = req.body.confirmpassword;
   let errors = [];
@@ -317,28 +324,34 @@ app.post("/resetPassword", function(req, res) {
         token: req.body.token
       });
     } else {
-      Teacher.findOne({
-        token: req.body.token
-      }, (err, user) => {
-        user.setPassword(newPassword, function(err, users) {
-          Teacher.updateOne({
-              _id: users._id
+      try {
+        const user = await Teacher.findOne({
+          token: req.body.token
+        });
+        if (user) {
+          await user.setPassword(newPassword);
+
+          try {
+            const updatedUser = await Teacher.updateOne({
+              _id: user._id
             }, {
-              hash: users.hash,
-              salt: users.salt,
+              hash: user.hash,
+              salt: user.salt,
               token: ''
-            },
-            (err, result) => {
-              if (err) {
-                console.log(err);
-              } else {
-                res.render("teacherLogin", {
-                  success_msg: "Password Changed Successfully!"
-                })
-              }
-            })
-        })
-      })
+            });
+            if (updatedUser) {
+              res.render("teacherLogin", {
+                success_msg: "Password Changed Successfully!"
+              });
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+      }
     }
   }
 });
@@ -384,7 +397,7 @@ app.get("/uploadattendancescreenshot", ensureAuthTeacher, function(req, res) {
   });
 });
 
-app.post("/uploadimages", function(req, res) {
+app.post("/uploadimages", async function(req, res) {
   let errors = [];
   const d = new Date();
   let todaysDate = "";
@@ -418,97 +431,108 @@ app.post("/uploadimages", function(req, res) {
     const dateOfAttendance = req.body.attendanceDate.split("-");
     const day = parseInt(dateOfAttendance[2]);
     const month = parseInt(dateOfAttendance[1]);
-    Attendance.findOne({
-      teacherEmail: req.user.username,
-      branch: req.body.branch,
-      month: month,
-      day: day
-    }, function(err, result) {
-      if (err) {
-        console.log(err);
-      } else {
-        if (result) {
-          errors.push({
-            msg: "Attendance is already marked for this date"
-          });
-          if (errors.length > 0) {
-            res.render("markAttendance", {
-              errors,
-              teacherName: req.body.teacherName,
-              email: req.user.username,
-              branchValue: req.body.branch,
-              branch: req.body.branch,
-              todaysDate: todaysDate,
-              dateSelected: ""
-            });
-          }
-        } else {
-          cloudinary.uploader.upload(firstImage.tempFilePath, (err, result) => {
-            const firstLink = result.url;
-            const imageuploaded = new UploadedImages({
-              email: req.user.username,
-              firstImagePath: firstLink,
-              branch: req.body.branch,
-              day: day,
-              month: month
-            });
-            imageuploaded.save(() => {
-              res.redirect("/uploadAttendance");
-            });
+    try {
+      const result = await Attendance.findOne({
+        teacherEmail: req.user.username,
+        branch: req.body.branch,
+        month: month,
+        day: day
+      });
+      if (result) {
+        errors.push({
+          msg: "Attendance is already marked for this date"
+        });
+        if (errors.length > 0) {
+          res.render("markAttendance", {
+            errors,
+            teacherName: req.body.teacherName,
+            email: req.user.username,
+            branchValue: req.body.branch,
+            branch: req.body.branch,
+            todaysDate: todaysDate,
+            dateSelected: ""
           });
         }
-      }
-    })
-  }
-});
+      } else {
+        const result = await cloudinary.uploader.upload(firstImage.tempFilePath);
+        const firstLink = result.url;
 
-app.get("/uploadAttendance", ensureAuthTeacher, function(req, res) {
-  UploadedImages.find({
-    email: req.user.username
-  }, function(err, result) {
-    const len = result.length;
-    const branch = result[len - 1].branch;
-    const day = result[len - 1].day;
-    const month = result[len - 1].month;
-    const studentNames = [];
-    const imageLinks = [];
-    const studentEnrollmentNo = [];
-    Student.find({
-      branch: branch
-    }, function(err, studentData) {
-      if (err) {
-        console.log(err);
-      } else {
-        for (let i = 0; i < studentData.length; i++) {
-          studentNames.push(studentData[i].studentName);
-          imageLinks.push(studentData[i].studentImage);
-          studentEnrollmentNo.push(studentData[i].enrollmentno);
-        }
-        const imageUploadedLink = "" + result[len - 1].firstImagePath;
-        res.render("attendancePage", {
-          teacherName: req.user.teacherName,
-          imageUploaded: imageUploadedLink,
-          studentNames: studentNames,
-          imageLinks: imageLinks,
-          studentEnrollmentNo: studentEnrollmentNo,
-          branch: branch,
+        const imageuploaded = new UploadedImages({
+          email: req.user.username,
+          firstImagePath: firstLink,
+          branch: req.body.branch,
           day: day,
           month: month
         });
+
+        await imageuploaded.save();
+        res.redirect("/uploadAttendance");
       }
-    });
-  });
+    } catch (err) {
+      console.error(err);
+    }
+  }
 });
 
-app.post("/uploadAttendance", function(req, res) {
-  const attendanceRecord = new Attendance({
-    teacherEmail: req.user.username,
-    branch: req.body.branch,
-    day: req.body.day,
-    month: req.body.month,
-    studentsPresent: req.body.studentsWhoAttend.split(",")
-  });
-  attendanceRecord.save(() => {
+app.get("/uploadAttendance", ensureAuthTeacher, async function(req, res) {
+  try {
+    const result = await UploadedImages.find({
+      email: req.user.username
+    });
+    if (result) {
+      const len = result.length;
+      const branch = result[len - 1].branch;
+      const day = result[len - 1].day;
+      const month = result[len - 1].month;
+      const studentNames = [];
+      const imageLinks = [];
+      const studentEnrollmentNo = [];
+
+      try {
+        const studentData = await Student.find({
+          branch: branch
+        });
+
+        if (studentData) {
+          for (let i = 0; i < studentData.length; i++) {
+            studentNames.push(studentData[i].studentName);
+            imageLinks.push(studentData[i].studentImage);
+            studentEnrollmentNo.push(studentData[i].enrollmentno);
+          }
+
+          const imageUploadedLink = "" + result[len - 1].firstImagePath;
+
+          res.render("attendancePage", {
+            teacherName: req.user.teacherName,
+            imageUploaded: imageUploadedLink,
+            studentNames: studentNames,
+            imageLinks: imageLinks,
+            studentEnrollmentNo: studentEnrollmentNo,
+            branch: branch,
+            day: day,
+            month: month
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+app.post("/uploadAttendance", async function(req, res) {
+  try {
+    const attendanceRecord = new Attendance({
+      teacherEmail: req.user.username,
+      branch: req.body.branch,
+      day: req.body.day,
+      month: req.body.month,
+      studentsPresent: req.body.studentsWhoAttend.split(",")
+    });
+    await attendanceRecord.save();
+
     res.render("attendanceUploaded", {
       teacherName: req.body.teacherName,
       email: req.user.username,
@@ -516,65 +540,80 @@ app.post("/uploadAttendance", function(req, res) {
       day: req.body.day,
       month: req.body.month
     });
-  });
+  } catch (err) {
+    console.error(err);
+  }
 });
 
-app.post("/viewAttendance", function(req, res) {
-  Attendance.findOne({
-    email: req.body.email,
-    branch: req.body.branch,
-    month: req.body.month,
-    day: req.body.day
-  }, function(err, result) {
+app.post("/viewAttendance", async function(req, res) {
+  try {
+    const result = await Attendance.findOne({
+      teacherEmail: req.body.email,
+      branch: req.body.branch,
+      month: req.body.month,
+      day: req.body.day
+    });
+
     const studentNames = [];
     const studentEnrollmentNo = [];
-    Student.find({
-      branch: req.body.branch
-    }, function(err, studentData) {
-      if (err) {
-        console.log(err);
-      } else {
-        for (let i = 0; i < studentData.length; i++) {
-          studentNames.push(studentData[i].studentName);
-          studentEnrollmentNo.push(studentData[i].enrollmentno);
-        }
-        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        const month = months[req.body.month - 1];
-        const date = req.body.day + " " + month;
-        const present = [];
-        for (let i = 0; i < result.studentsPresent.length; i++) {
-          const myArray = result.studentsPresent[i].split("-");
-          const index = studentEnrollmentNo.indexOf(myArray[1]);
-          if (index > -1) {
-            studentNames.splice(index, 1);
-            studentEnrollmentNo.splice(index, 1);
-          }
-          const presentStudent = {
-            enrollmentno: myArray[1],
-            studentName: myArray[0]
-          }
-          present.push(presentStudent);
-        }
-        const absent = [];
-        for (let i = 0; i < studentEnrollmentNo.length; i++) {
-          const absentStudent = {
-            enrollmentno: studentEnrollmentNo[i],
-            studentName: studentNames[i]
-          }
-          absent.push(absentStudent);
-        }
-        res.render("viewClassAttendance", {
-          teacherName: req.body.teacherName,
-          branch: req.body.branch,
-          date: date,
-          month: month,
-          present: present,
-          absent: absent,
-          key: 1
+
+    if (result) {
+      try {
+        const studentData = await Student.find({
+          branch: req.body.branch
         });
+
+        if (studentData) {
+          for (let i = 0; i < studentData.length; i++) {
+            studentNames.push(studentData[i].studentName);
+            studentEnrollmentNo.push(studentData[i].enrollmentno);
+          }
+
+          const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+          const month = months[req.body.month - 1];
+          const date = req.body.day + " " + month;
+          const present = [];
+
+          for (let i = 0; i < result.studentsPresent.length; i++) {
+            const myArray = result.studentsPresent[i].split("-");
+            const index = studentEnrollmentNo.indexOf(myArray[1]);
+            if (index > -1) {
+              studentNames.splice(index, 1);
+              studentEnrollmentNo.splice(index, 1);
+            }
+            const presentStudent = {
+              enrollmentno: myArray[1],
+              studentName: myArray[0]
+            }
+            present.push(presentStudent);
+          }
+
+          const absent = [];
+          for (let i = 0; i < studentEnrollmentNo.length; i++) {
+            const absentStudent = {
+              enrollmentno: studentEnrollmentNo[i],
+              studentName: studentNames[i]
+            }
+            absent.push(absentStudent);
+          }
+
+          res.render("viewClassAttendance", {
+            teacherName: req.body.teacherName,
+            branch: req.body.branch,
+            date: date,
+            month: month,
+            present: present,
+            absent: absent,
+            key: 1
+          });
+        }
+      } catch (err) {
+        console.error(err);
       }
-    });
-  });
+    }
+  } catch (err) {
+    console.error(err);
+  }
 });
 
 app.post("/viewmonthlyattendance", function(req, res) {
@@ -598,7 +637,7 @@ app.get("/viewAttendanceofMonth", ensureAuthTeacher, function(req, res) {
   });
 });
 
-app.post("/attendanceofmonth", function(req, res) {
+app.post("/attendanceofmonth", async function(req, res) {
   let errors = [];
   if (req.body.attendanceMonth === "Select Month") {
     errors.push({
@@ -648,29 +687,32 @@ app.post("/attendanceofmonth", function(req, res) {
       });
     } else {
       const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      Attendance.find({
-        email: req.user.username,
-        month: months.indexOf(req.body.attendanceMonth) + 1,
-        branch: req.body.branch
-      }, function(err, result) {
-        if (err) {
-          console.log(err);
-        } else {
+      try {
+        const result = await Attendance.find({
+          teacherEmail: req.user.username,
+          month: months.indexOf(req.body.attendanceMonth) + 1,
+          branch: req.body.branch
+        });
+
+        if (result) {
           const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
           const idx = months.indexOf(req.body.attendanceMonth);
           const noOfDays = daysInMonth[idx];
-          Student.find({
-            branch: req.body.branch
-          }, function(err, studentData) {
-            if (err) {
-              console.log(err);
-            } else {
+
+          try {
+            const studentData = await Student.find({
+              branch: req.body.branch
+            });
+
+            if (studentData) {
               const studentNames = [];
               const studentEnrollmentNo = [];
               const attendanceStatus = [];
+
               for (let i = 0; i < noOfDays; i++) {
                 attendanceStatus.push({});
               }
+
               for (let i = 0; i < result.length; i++) {
                 const myObj = result[i];
                 const dateIdx = myObj.day - 1;
@@ -685,10 +727,12 @@ app.post("/attendanceofmonth", function(req, res) {
                 }
                 attendanceStatus[dateIdx] = newObj
               }
+
               for (let i = 0; i < studentData.length; i++) {
                 studentNames.push(studentData[i].studentName);
                 studentEnrollmentNo.push(studentData[i].enrollmentno);
               }
+
               res.render("viewMonthAttendance", {
                 teacherName: req.user.teacherName,
                 attendanceMonth: req.body.attendanceMonth,
@@ -702,13 +746,17 @@ app.post("/attendanceofmonth", function(req, res) {
                 isSelected: true,
                 result: result,
                 attendanceStatus: attendanceStatus
-              })
+              });
             }
-          })
+          } catch (err) {
+            console.error(err);
+          }
         }
-      });
+      } catch (err) {
+        console.error(err);
+      }
     }
-  };
+  }
 })
 
 app.get("/teacherLogout", ensureAuthTeacher, function(req, res) {

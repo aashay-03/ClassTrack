@@ -1,11 +1,15 @@
-function backToHome() {
-  location.href = "http://localhost:3000";
-}
+const redirectTo = (path) => {
+  location.href = `http://localhost:3000/${path}`;
+};
 
-function backToHomeTeacher() {
-  location.href = "http://localhost:3000/teacherHome";
-}
+const backToHome = () => {
+  redirectTo("");
+};
 
-function backToUploadPage() {
-  location.href = "http://localhost:3000/uploadattendancescreenshot";
-}
+const backToHomeTeacher = () => {
+  redirectTo("teacherHome");
+};
+
+const backToUploadPage = () => {
+  redirectTo("uploadattendancescreenshot");
+};

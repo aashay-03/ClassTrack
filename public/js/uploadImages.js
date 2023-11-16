@@ -9,6 +9,7 @@ const displayBtn = document.querySelector(".displayBtn");
 var x, i, j, l, ll, selElmnt, a, b, c;
 x = document.getElementsByClassName("custom-select");
 l = x.length;
+
 for (i = 0; i < l; i++) {
   selElmnt = x[i].getElementsByTagName("select")[0];
   ll = selElmnt.length;
@@ -18,6 +19,7 @@ for (i = 0; i < l; i++) {
   x[i].appendChild(a);
   b = document.createElement("DIV");
   b.setAttribute("class", "select-items select-hide");
+
   for (j = 1; j < ll; j++) {
     c = document.createElement("DIV");
     c.innerHTML = selElmnt.options[j].innerHTML;
@@ -27,6 +29,7 @@ for (i = 0; i < l; i++) {
       s = this.parentNode.parentNode.getElementsByTagName("select")[0];
       sl = s.length;
       h = this.parentNode.previousSibling;
+
       for (i = 0; i < sl; i++) {
         if (s.options[i].innerHTML == this.innerHTML) {
           s.selectedIndex = i;
@@ -44,6 +47,7 @@ for (i = 0; i < l; i++) {
     });
     b.appendChild(c);
   }
+
   x[i].appendChild(b);
   a.addEventListener("click", function(e) {
     e.stopPropagation();
@@ -53,7 +57,7 @@ for (i = 0; i < l; i++) {
   });
 }
 
-function closeAllSelect(elmnt) {
+const closeAllSelect = elmnt => {
   var x, y, i, xl, yl, arrNo = [];
   x = document.getElementsByClassName("select-items");
   y = document.getElementsByClassName("select-selected");
@@ -77,8 +81,26 @@ document.addEventListener("click", closeAllSelect);
 
 /* ############### File Type Detection ############### */
 
-submitBtn.style.display = "none";
-displayBtn.style.display = "inline-block";
+const showSubmitBtn = () => {
+  submitBtn.style.display = "inline-block";
+  displayBtn.style.display = "none";
+};
+
+const hideSubmitBtn = () => {
+  submitBtn.style.display = "none";
+  displayBtn.style.display = "inline-block";
+};
+
+const showErrorMessage = () => {
+  firstLabel.innerHTML = "Invalid File Type";
+  firstLabel.style.visibility = "visible";
+};
+
+const hideErrorMessage = () => {
+  firstLabel.style.visibility = "hidden";
+};
+
+const isImage = (ext) => ext === "png;" || ext === "jpeg";
 
 Promise.all([
   faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
@@ -87,47 +109,27 @@ Promise.all([
 ]).then(start)
 
 function start() {
-  firstImage.addEventListener("change", async() => {
+  firstImage.addEventListener("change", async () => {
     try {
-      submitBtn.style.display = "none";
-      displayBtn.style.display = "inline-block";
+      hideSubmitBtn();
+
       const firstPhoto = await faceapi.bufferToImage(firstImage.files[0]);
       const ext = firstPhoto.src.substring(11, 15);
-      if(isImage(ext)){
-        submitBtn.style.display = "none";
-        displayBtn.style.display = "inline-block";
-        firstLabel.style.visibility = "hidden";
+
+      if (isImage(ext)) {
+        hideSubmitBtn();
+        hideErrorMessage();
+
         const detections = await faceapi.detectAllFaces(firstPhoto).withFaceLandmarks().withFaceDescriptors();
         const len = detections.length;
-        submitBtn.style.display = "inline-block";
-        displayBtn.style.display = "none";
-        firstLabel.style.visibility = "hidden";
-      }else{
-        firstLabel.innerHTML = "Invalid File Type";
-        firstLabel.style.visibility = "visible";
+
+        showSubmitBtn();
+        hideErrorMessage();
+      } else {
+        showErrorMessage();
       }
     } catch (err) {
-      console.log(err);
-      if(err.type === "error"){
-        firstLabel.innerHTML = "Invalid File Type";
-        firstLabel.style.visibility = "visible";
-      }else{
-        firstLabel.style.visibility = "hidden";
-      }
+      err.type === "error" ? showErrorMessage() : hideErrorMessage();
     }
   });
-}
-
-function isImage(ext){
-  submitBtn.style.display = "none";
-  displayBtn.style.display = "inline-block";
-  if(ext === "png;" || ext === "jpeg"){
-    submitBtn.style.display = "none";
-    displayBtn.style.display = "inline-block";
-    return true;
-  }else{
-    submitBtn.style.display = "none";
-    displayBtn.style.display = "inline-block";
-    return false;
-  }
 }
