@@ -35,62 +35,65 @@ const sendResetPasswordMail = (name, email, token) => {
     html: '<p>Hi ' + name + ', </p><p>Please click <a href="http://localhost:3000/resetPassword?token=' + token + '">here</a> to reset your password.</p><br><p>Regards</p><p>Project Admin</p>'
   };
 
-  transport.sendMail(mailOptions, function(err, info) {
+  transport.sendMail(mailOptions, (err, info) => {
     if (err) {
       console.error(err);
-    } else {
-      console.log(info);
     }
   });
 }
 
-router.get("/", ensureGuestTeacher, function(req, res) {
+router.get("/", ensureGuestTeacher, (req, res) => {
   res.redirect("/teacherLogin");
 });
 
-router.get("/teacherLogin", ensureGuestTeacher, function(req, res) {
+router.get("/teacherLogin", ensureGuestTeacher, (req, res) => {
   res.render("teacherLogin");
 });
 
-router.get("/teacherRegister", ensureGuestTeacher, function(req, res) {
+router.get("/teacherRegister", ensureGuestTeacher, (req, res) => {
   res.render("teacherRegister");
 });
 
-router.get("/forgotPassword", ensureGuestTeacher, function(req, res) {
+router.get("/forgotPassword", ensureGuestTeacher, (req, res) => {
   res.render("forgotPassword");
 });
 
-router.post("/forgotPassword", async function(req, res) {
-  const email = req.body.username;
+router.post("/forgotPassword", async (req, res) => {
+  const {
+    username: email
+  } = req.body;
+
   try {
     const result = await Teacher.findOne({
       username: email
     });
+
     if (!result) {
       let errors = [];
       errors.push({
         msg: "Invalid Email"
       });
-      res.render("forgotPassword", {
+      return res.render("forgotPassword", {
         errors
       });
-    } else {
-      const randomstringVariable = randomstring.generate();
-      try {
-        const updateResult = await Teacher.updateOne({
-          username: email
-        }, {
-          $set: {
-            token: randomstringVariable
-          }
-        });
-        sendResetPasswordMail(result.teacherName, result.username, randomstringVariable);
-        res.render("forgotPassword", {
-          success_msg: "Email Sent!"
-        });
-      } catch (err) {
-        console.error(err);
-      }
+    }
+    const randomstringVariable = randomstring.generate();
+
+    try {
+      const updateResult = await Teacher.updateOne({
+        username: email
+      }, {
+        $set: {
+          token: randomstringVariable
+        }
+      });
+
+      sendResetPasswordMail(result.teacherName, result.username, randomstringVariable);
+      res.render("forgotPassword", {
+        success_msg: "Email Sent!"
+      });
+    } catch (err) {
+      console.error(err);
     }
   } catch (err) {
     console.error(err);
@@ -98,103 +101,116 @@ router.post("/forgotPassword", async function(req, res) {
   }
 });
 
-router.get("/resetPassword", ensureGuestTeacher, async function(req, res) {
+router.get("/resetPassword", ensureGuestTeacher, async (req, res) => {
   try {
     const result = await Teacher.findOne({
       token: req.query.token
     });
+
     if (!result) {
-      res.status(200).send({
+      return res.status(200).send({
         msg: "Invalid Link"
       });
-    } else {
-      res.render("resetPassword", {
-        token: req.query.token
-      });
     }
+
+    res.render("resetPassword", {
+      token: req.query.token
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal Server Error");
   }
 });
 
-router.post("/resetPassword", async function(req, res) {
-  const newPassword = req.body.newpassword;
-  const confirmPassword = req.body.confirmpassword;
+router.post("/resetPassword", async (req, res) => {
+  const {
+    newpassword: newPassword,
+    confirmpassword: confirmPassword,
+    token
+  } = req.body;
+
   let errors = [];
   if (newPassword.length < 6) {
     errors.push({
       msg: "Password should be atleast 6 characters"
     });
   }
-  if (errors.length > 0) {
-    res.render("resetPassword", {
-      errors,
-      token: req.body.token
-    });
-  } else {
-    if (newPassword !== confirmPassword) {
-      errors.push({
-        msg: "Passwords don't match"
-      });
-    }
-    if (errors.length > 0) {
-      res.render("resetPassword", {
-        errors,
-        token: req.body.token
-      });
-    } else {
-      try {
-        const user = await Teacher.findOne({
-          token: req.body.token
-        });
-        if (user) {
-          await user.setPassword(newPassword);
 
-          try {
-            const updatedUser = await Teacher.updateOne({
-              _id: user._id
-            }, {
-              hash: user.hash,
-              salt: user.salt,
-              token: ''
-            });
-            if (updatedUser) {
-              res.render("teacherLogin", {
-                success_msg: "Password Changed Successfully!"
-              });
-            }
-          } catch (err) {
-            console.error(err);
-          }
+  if (errors.length > 0) {
+    return res.render("resetPassword", {
+      errors,
+      token
+    });
+  }
+
+  if (newPassword !== confirmPassword) {
+    errors.push({
+      msg: "Passwords don't match"
+    });
+  }
+
+  if (errors.length > 0) {
+    return res.render("resetPassword", {
+      errors,
+      token
+    });
+  }
+
+  try {
+    const user = await Teacher.findOne({
+      token
+    });
+
+    if (user) {
+      await user.setPassword(newPassword);
+
+      try {
+        const updatedUser = await Teacher.updateOne({
+          _id: user._id
+        }, {
+          hash: user.hash,
+          salt: user.salt,
+          token: ''
+        });
+        if (updatedUser) {
+          res.render("teacherLogin", {
+            success_msg: "Password Changed Successfully!"
+          });
         }
       } catch (err) {
         console.error(err);
-        res.status(500).send("Internal Server Error");
       }
     }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
   }
 });
 
-router.get("/teacherHome", ensureAuthTeacher, function(req, res) {
+router.get("/teacherHome", ensureAuthTeacher, (req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
+
+  const {
+    teacherName,
+    username
+  } = req.user;
   res.render("teacherHome", {
-    teacherName: req.user.teacherName,
-    email: req.user.username
+    teacherName,
+    email: username
   });
 });
 
-router.post("/takemehome", function(req, res) {
+router.post("/takemehome", (req, res) => {
   res.redirect("/teacherHome");
 });
 
-router.post("/markattendance", function(req, res) {
+router.post("/markattendance", (req, res) => {
   res.redirect("uploadattendancescreenshot");
 });
 
-router.get("/uploadattendancescreenshot", ensureAuthTeacher, function(req, res) {
+router.get("/uploadattendancescreenshot", ensureAuthTeacher, (req, res) => {
   const d = new Date();
   let todaysDate = "";
   let date = d.getDate();
@@ -207,6 +223,7 @@ router.get("/uploadattendancescreenshot", ensureAuthTeacher, function(req, res) 
   }
   let year = d.getFullYear();
   todaysDate += year + "-" + month + "-" + date;
+
   res.render("markAttendance", {
     teacherName: req.user.teacherName,
     email: req.user.username,
@@ -217,7 +234,7 @@ router.get("/uploadattendancescreenshot", ensureAuthTeacher, function(req, res) 
   });
 });
 
-router.post("/uploadimages", async function(req, res) {
+router.post("/uploadimages", async (req, res) => {
   let errors = [];
   const d = new Date();
   let todaysDate = "";
@@ -231,11 +248,13 @@ router.post("/uploadimages", async function(req, res) {
   }
   let year = d.getFullYear();
   todaysDate += year + "-" + month + "-" + date;
+
   if (req.body.branch === "Select Branch") {
     errors.push({
       msg: "Please Select Branch"
     });
   }
+
   if (errors.length > 0) {
     res.render("markAttendance", {
       errors,
@@ -251,6 +270,7 @@ router.post("/uploadimages", async function(req, res) {
     const dateOfAttendance = req.body.attendanceDate.split("-");
     const day = parseInt(dateOfAttendance[2]);
     const month = parseInt(dateOfAttendance[1]);
+
     try {
       const result = await Attendance.findOne({
         teacherEmail: req.user.username,
@@ -258,10 +278,12 @@ router.post("/uploadimages", async function(req, res) {
         month: month,
         day: day
       });
+
       if (result) {
         errors.push({
           msg: "Attendance is already marked for this date"
         });
+
         if (errors.length > 0) {
           res.render("markAttendance", {
             errors,
@@ -294,11 +316,12 @@ router.post("/uploadimages", async function(req, res) {
   }
 });
 
-router.get("/uploadAttendance", ensureAuthTeacher, async function(req, res) {
+router.get("/uploadAttendance", ensureAuthTeacher, async (req, res) => {
   try {
     const result = await UploadedImages.find({
       email: req.user.username
     });
+
     if (result) {
       const len = result.length;
       const branch = result[len - 1].branch;
@@ -342,7 +365,7 @@ router.get("/uploadAttendance", ensureAuthTeacher, async function(req, res) {
   }
 });
 
-router.post("/uploadAttendance", async function(req, res) {
+router.post("/uploadAttendance", async (req, res) => {
   try {
     const attendanceRecord = new Attendance({
       teacherEmail: req.user.username,
@@ -365,7 +388,7 @@ router.post("/uploadAttendance", async function(req, res) {
   }
 });
 
-router.post("/viewAttendance", async function(req, res) {
+router.post("/viewAttendance", async (req, res) => {
   try {
     const result = await Attendance.findOne({
       teacherEmail: req.body.email,
@@ -436,11 +459,11 @@ router.post("/viewAttendance", async function(req, res) {
   }
 });
 
-router.post("/viewmonthlyattendance", function(req, res) {
+router.post("/viewmonthlyattendance", (req, res) => {
   res.redirect("/viewAttendanceofMonth");
 });
 
-router.get("/viewAttendanceofMonth", ensureAuthTeacher, function(req, res) {
+router.get("/viewAttendanceofMonth", ensureAuthTeacher, (req, res) => {
   res.render("viewMonthAttendance", {
     teacherName: req.user.teacherName,
     attendanceMonth: "Select Month",
@@ -457,13 +480,14 @@ router.get("/viewAttendanceofMonth", ensureAuthTeacher, function(req, res) {
   });
 });
 
-router.post("/attendanceofmonth", async function(req, res) {
+router.post("/attendanceofmonth", async (req, res) => {
   let errors = [];
   if (req.body.attendanceMonth === "Select Month") {
     errors.push({
       msg: "Please Select Month"
     });
   }
+
   if (errors.length > 0) {
     if (req.body.branch === "") {
       req.body.branch = "Select Branch";
@@ -489,6 +513,7 @@ router.post("/attendanceofmonth", async function(req, res) {
         msg: "Please Select Branch"
       });
     }
+
     if (errors.length > 0) {
       res.render("viewMonthAttendance", {
         errors,
@@ -507,6 +532,7 @@ router.post("/attendanceofmonth", async function(req, res) {
       });
     } else {
       const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
       try {
         const result = await Attendance.find({
           teacherEmail: req.user.username,
@@ -579,14 +605,13 @@ router.post("/attendanceofmonth", async function(req, res) {
   }
 })
 
-router.get("/teacherLogout", ensureAuthTeacher, function(req, res) {
-  req.logout(function(err) {
+router.get("/teacherLogout", ensureAuthTeacher, (req, res) => {
+  req.logout(err => {
     if (err) {
       return next(err);
-    } else {
-      req.flash("success_msg", "You are logged out");
-      res.redirect("/teacherLogin");
     }
+    req.flash("success_msg", "You are logged out");
+    res.redirect("/teacherLogin");
   });
 });
 

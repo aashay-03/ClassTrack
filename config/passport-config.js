@@ -21,78 +21,84 @@ const configurePassport = (app) => {
     failureFlash: true,
   }));
 
-  app.post("/teacherRegister", (req, res) => {
-    const email = req.body.username;
-    const teacherName = req.body.teacherName;
-    const collegeCode = req.body.collegeCode;
+  app.post("/teacherRegister", async (req, res) => {
+    const {
+      username,
+      teacherName,
+      collegeCode,
+      password
+    } = req.body;
 
     let errors = [];
-    if (/^[a-zA-Z ]+$/.test(req.body.teacherName) === false) {
+    if (/^[a-zA-Z ]+$/.test(teacherName) === false) {
       errors.push({
         msg: "Please enter correct name"
       });
     }
 
     if (errors.length > 0) {
+      return res.render("teacherRegister", {
+        errors,
+        teacherName,
+        email: username,
+        collegeCode
+      });
+    }
+
+    if (password.length < 6) {
+      errors.push({
+        msg: "Password should be atleast 6 characters"
+      });
+    }
+
+    if (errors.length > 0) {
+      return res.render("teacherRegister", {
+        errors,
+        teacherName,
+        email: username,
+        collegeCode
+      });
+    }
+
+    if (collegeCode != college_code) {
+      errors.push({
+        msg: "Incorrect College Code"
+      });
+    }
+
+    if (errors.length > 0) {
+      return res.render("teacherRegister", {
+        errors,
+        teacherName,
+        email: username,
+        collegeCode
+      });
+    }
+
+    try {
+      const user = await Teacher.register({
+          username,
+          email: username,
+          teacherName,
+        },
+        password
+      );
+
+      passport.authenticate("teacher-local")(req, res, () => {
+        res.redirect("/teacherHome");
+      });
+    } catch (err) {
+      console.error(err);
+      errors.push({
+        msg: "Email is already registered"
+      });
+
       res.render("teacherRegister", {
         errors,
         teacherName,
-        email,
-        collegeCode
+        email: username,
+        collegeCode,
       });
-    } else {
-      if (req.body.password.length < 6) {
-        errors.push({
-          msg: "Password should be atleast 6 characters"
-        });
-      }
-
-      if (errors.length > 0) {
-        res.render("teacherRegister", {
-          errors,
-          teacherName,
-          email,
-          collegeCode
-        });
-      } else {
-        if (req.body.collegeCode != college_code) {
-          errors.push({
-            msg: "Incorrect College Code"
-          });
-        }
-
-        if (errors.length > 0) {
-          res.render("teacherRegister", {
-            errors,
-            teacherName,
-            email,
-            collegeCode
-          });
-        } else {
-          Teacher.register({
-            username: req.body.username,
-            email: req.body.username,
-            teacherName: req.body.teacherName
-          }, req.body.password, function(err, user) {
-            if (err) {
-              console.error(err);
-              errors.push({
-                msg: "Email is already registered"
-              });
-              res.render("teacherRegister", {
-                errors,
-                teacherName,
-                email,
-                collegeCode
-              });
-            } else {
-              passport.authenticate("teacher-local")(req, res, function() {
-                res.redirect("/teacherHome");
-              });
-            }
-          });
-        }
-      }
     }
   });
 };

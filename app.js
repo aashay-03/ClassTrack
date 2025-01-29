@@ -53,10 +53,7 @@ app.use("/", indexRoute);
 
 const mongo_database = process.env.MONGO_REMOTE;
 
-mongoose.connect(`${mongo_database}`, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+mongoose.connect(`${mongo_database}`)
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.error(err));
 
